@@ -1,1 +1,1 @@
-# painel-OSMC-consulta
+# painelOSMC-consulta
