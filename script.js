@@ -184,10 +184,32 @@ function popularFiltrosDinamicos() {
     }
 
     preencherSelect(filterStatus, statusSet);
-    preencherSelect(filterSolicitante, solicitanteSet); 
     preencherSelect(filterPlanta, plantaSet); 
     preencherSelect(filterBloco, blocoSet);
     preencherSelect(filterMotivo, motivoSet);
+    atualizarSolicitantesPorBloco(solicitanteSet);
+}
+
+function atualizarSolicitantesPorBloco(solicitantesDisponiveis) {
+    const solicitanteAtual = filterSolicitante.value;
+    const solicitantesDoBloco = filterBloco.value
+        ? allData
+            .filter(row => row[4] === filterBloco.value && row[3] !== '-')
+            .map(row => row[3])
+        : Array.from(solicitantesDisponiveis);
+    const solicitantesUnicos = Array.from(new Set(solicitantesDoBloco)).sort();
+
+    filterSolicitante.innerHTML = '<option value="">Todos os Solicitantes</option>';
+    solicitantesUnicos.forEach(solicitante => {
+        const option = document.createElement('option');
+        option.value = solicitante;
+        option.textContent = solicitante;
+        filterSolicitante.appendChild(option);
+    });
+
+    if (solicitantesUnicos.includes(solicitanteAtual)) {
+        filterSolicitante.value = solicitanteAtual;
+    }
 }
 
 function aplicarFiltrosGerais() {
@@ -226,22 +248,28 @@ function aplicarFiltrosGerais() {
 
 function atualizarDisponibilidadeRelatorio() {
     const solicitanteSelecionado = Boolean(filterSolicitante.value);
+    const blocoSelecionado = Boolean(filterBloco.value);
     const existemRegistros = filteredData.length > 0;
 
-    btnGenerateReport.disabled = !solicitanteSelecionado || !existemRegistros;
+    btnGenerateReport.disabled = (!solicitanteSelecionado && !blocoSelecionado) || !existemRegistros;
     btnGenerateReport.title = solicitanteSelecionado
         ? (existemRegistros
             ? 'Gerar relatório em PDF para o solicitante selecionado'
             : 'Não há registros para os filtros selecionados')
-        : 'Selecione um solicitante para gerar o relatório em PDF';
+        : blocoSelecionado
+            ? (existemRegistros
+                ? 'Gerar relatório em PDF para todos os solicitantes do bloco selecionado'
+                : 'Não há registros para os filtros selecionados')
+            : 'Selecione um solicitante ou bloco para gerar o relatório em PDF';
 }
 
 function gerarRelatorioSolicitante() {
     const solicitante = filterSolicitante.value;
+    const bloco = filterBloco.value;
 
-    if (!solicitante) {
-        alert('Selecione um solicitante antes de gerar o relatório.');
-        filterSolicitante.focus();
+    if (!solicitante && !bloco) {
+        alert('Selecione um solicitante ou bloco antes de gerar o relatório.');
+        filterBloco.focus();
         return;
     }
 
@@ -263,7 +291,8 @@ function gerarRelatorioSolicitante() {
         return;
     }
 
-    const nomeSolicitante = solicitante.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '');
+    const nomeRelatorio = (solicitante || `bloco_${bloco}`).replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '');
+    const destinatarioRelatorio = solicitante || `Todos os solicitantes do bloco ${bloco}`;
     const totalPagesExp = '{total_pages_count_string}';
 
     // Contadores para o resumo do solicitante
@@ -320,11 +349,11 @@ function gerarRelatorioSolicitante() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(138, 21, 27);
-    doc.text('Solicitante:', 20, 35);
+    doc.text(solicitante ? 'Solicitante:' : 'Bloco:', 20, 35);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 30, 30);
-    doc.text(solicitante, 38, 35);
+    doc.text(destinatarioRelatorio, 38, 35);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
@@ -439,7 +468,7 @@ function gerarRelatorioSolicitante() {
             doc.setFontSize(7);
             doc.setTextColor(120, 120, 120);
             doc.text('Hemobrás - Empresa Brasileira de Hemoderivados e Biotecnologia', 14, pageHeight - 5);
-            doc.text(`Solicitante: ${solicitante}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+            doc.text(solicitante ? `Solicitante: ${solicitante}` : `Bloco: ${bloco}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
             doc.text(`Página ${data.pageNumber} de ${totalPagesExp}`, pageWidth - 14, pageHeight - 5, { align: 'right' });
         }
     });
@@ -448,7 +477,7 @@ function gerarRelatorioSolicitante() {
         doc.putTotalPages(totalPagesExp);
     }
 
-    doc.save(`relatorio_osmc_${nomeSolicitante || 'solicitante'}.pdf`);
+    doc.save(`relatorio_osmc_${nomeRelatorio || 'bloco'}.pdf`);
 }
 
 function getTopNData(dataArray, colIndex, topN) {
@@ -669,7 +698,11 @@ searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
 filterSolicitante.addEventListener('change', aplicarFiltrosGerais); 
 filterPlanta.addEventListener('change', aplicarFiltrosGerais); 
-filterBloco.addEventListener('change', aplicarFiltrosGerais);
+filterBloco.addEventListener('change', () => {
+    const solicitantes = new Set(allData.map(row => row[3]).filter(solicitante => solicitante !== '-'));
+    atualizarSolicitantesPorBloco(solicitantes);
+    aplicarFiltrosGerais();
+});
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
 
 document.addEventListener('DOMContentLoaded', init);
