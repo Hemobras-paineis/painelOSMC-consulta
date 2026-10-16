@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gerenciamento - OSMC Hemobrás</title>
+    <title>Consulta OSMC</title>
     <link rel="icon" type="image/png" href="MARCA_HEMOBRÁS_vertical_(1).png">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
             <div class="branding">
                 <img src="MARCA_HEMOBRÁS_vertical_(1).png" alt="Logo Hemobrás" class="logo">
                 <div class="titles">
-                    <h1>Gerenciamento OSMC</h1>
+                    <h1>Consulta OSMC</h1>
                     <p>Ordens de Serviço de Manutenção Corretiva</p>
                 </div>
             </div>
@@ -29,9 +29,6 @@
                 </select>
                 <select id="filterSolicitante" class="filter-select">
                     <option value="">Todos os Solicitantes</option>
-                </select>
-                <select id="filterPlanta" class="filter-select">
-                    <option value="">Todas as Plantas</option>
                 </select>
                 <select id="filterBloco" class="filter-select">
                     <option value="">Todos os Blocos</option>
@@ -63,10 +60,6 @@
                 <div class="chart-box">
                     <h4>Top 5 Blocos (Volume de OSMC)</h4>
                     <div class="canvas-container"><canvas id="blocoChart"></canvas></div>
-                </div>
-                <div class="chart-box">
-                    <h4>Distribuição por Planta</h4>
-                    <div class="canvas-container"><canvas id="plantaChart"></canvas></div>
                 </div>
             </div>
 

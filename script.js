@@ -6,7 +6,7 @@ const LOGO_HEMOBRAS_BASE64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD
 // ADICIONADA A COLUNA "Data/hora de Emissão" (Índice 1)
 const COLUNAS_DESEJADAS = [
     "Status", "Data/hora de Emissão", "Número da OSMC", "Solicitante", "Bloco", "Piso",
-    "Equipamento", "Sala", "Descrição do Problema", "Observação", "Motivo", "Data/hora de fechamento", "Planta"
+    "Equipamento", "Sala", "Descrição do Problema", "Observação", "Motivo", "Data/hora de fechamento"
 ];
 
 let allData = [];
@@ -16,14 +16,12 @@ let currentPage = 1;
 
 let osmcChartInstance = null; 
 let blocoChartInstance = null;
-let plantaChartInstance = null; 
 
 let isTableVisible = false;
 
 const searchInput = document.getElementById('searchInput');
 const filterStatus = document.getElementById('filterStatus');
 const filterSolicitante = document.getElementById('filterSolicitante');
-const filterPlanta = document.getElementById('filterPlanta'); 
 const filterBloco = document.getElementById('filterBloco');
 const filterMotivo = document.getElementById('filterMotivo');
 const btnGenerateReport = document.getElementById('btnGenerateReport');
@@ -154,7 +152,6 @@ function fetchData(isSilentUpdate = false) {
 function popularFiltrosDinamicos() {
     const statusSet = new Set();
     const solicitanteSet = new Set(); 
-    const plantaSet = new Set(); 
     const blocoSet = new Set();
     const motivoSet = new Set();
 
@@ -166,7 +163,6 @@ function popularFiltrosDinamicos() {
         if (row[3] !== "-") solicitanteSet.add(row[3]); // Solicitante agora é 3
         if (row[4] !== "-") blocoSet.add(row[4]); // Bloco agora é 4
         if (row[10] !== "-") motivoSet.add(row[10]); // Motivo agora é 10
-        if (row[12] && row[12] !== "-") plantaSet.add(row[12]); // Planta agora é 12
     });
 
     function preencherSelect(selectElement, valoresSet) {
@@ -184,7 +180,6 @@ function popularFiltrosDinamicos() {
     }
 
     preencherSelect(filterStatus, statusSet);
-    preencherSelect(filterPlanta, plantaSet); 
     preencherSelect(filterBloco, blocoSet);
     preencherSelect(filterMotivo, motivoSet);
     atualizarSolicitantesPorBloco(solicitanteSet);
@@ -216,7 +211,6 @@ function aplicarFiltrosGerais() {
     const searchTerm = searchInput.value.toLowerCase();
     const statusFiltro = filterStatus.value;
     const solicitanteFiltro = filterSolicitante.value; 
-    const plantaFiltro = filterPlanta.value; 
     const blocoFiltro = filterBloco.value;
     const motivoFiltro = filterMotivo.value;
 
@@ -231,11 +225,9 @@ function aplicarFiltrosGerais() {
 
         const passouStatus = !statusFiltro || cleanStatus === statusFiltro;
         const passouSolicitante = !solicitanteFiltro || row[3] === solicitanteFiltro; 
-        const passouPlanta = !plantaFiltro || row[12] === plantaFiltro; 
         const passouBloco = !blocoFiltro || row[4] === blocoFiltro;
         const passouMotivo = !motivoFiltro || row[10] === motivoFiltro;
-
-        return passouPesquisa && passouStatus && passouSolicitante && passouPlanta && passouBloco && passouMotivo;
+        return passouPesquisa && passouStatus && passouSolicitante && passouBloco && passouMotivo;
     });
 
     currentPage = 1;
@@ -322,7 +314,7 @@ function gerarRelatorioSolicitante() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(138, 21, 27);
-    doc.text('HEMOBRÁS - GERENCIAMENTO DE OSMC', 36, 15);
+    doc.text('HEMOBRÁS - CONSULTA OSMC', 36, 15);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
@@ -371,10 +363,9 @@ function gerarRelatorioSolicitante() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(110, 110, 110);
-    const plantaF = filterPlanta.value || 'Todas';
     const blocoF = filterBloco.value || 'Todos';
     const statusF = filterStatus.value || 'Todos';
-    doc.text(`Filtros adicionais: Planta (${plantaF})  |  Bloco (${blocoF})  |  Status (${statusF})`, 20, 39.5);
+    doc.text(`Filtros adicionais: Bloco (${blocoF})  |  Status (${statusF})`, 20, 39.5);
 
     // 5. Tabela de Ordens de Serviço (Cores da Hemobrás)
     doc.autoTable({
@@ -424,8 +415,7 @@ function gerarRelatorioSolicitante() {
             8: { cellWidth: 40 }, // Descrição
             9: { cellWidth: 30 }, // Observação
             10: { cellWidth: 20 }, // Motivo
-            11: { cellWidth: 20, halign: 'center' }, // Fechamento
-            12: { cellWidth: 13, halign: 'center' }  // Planta
+            11: { cellWidth: 20, halign: 'center' } // Fechamento
         },
         didParseCell: function(data) {
             // Estilização dos status na tabela
@@ -592,21 +582,6 @@ function atualizarDashboards() {
         });
     }
 
-    // GRÁFICO 3: Planta (Agora no índice 12)
-    const plantaStats = getTopNData(filteredData, 12, 5); 
-    const ctxPlanta = document.getElementById('plantaChart').getContext('2d');
-    
-    if (plantaChartInstance) {
-        plantaChartInstance.data.labels = plantaStats.labels;
-        plantaChartInstance.data.datasets[0].data = plantaStats.data;
-        plantaChartInstance.update();
-    } else {
-        plantaChartInstance = new Chart(ctxPlanta, {
-            type: 'pie', 
-            data: { labels: plantaStats.labels, datasets: [{ data: plantaStats.data, backgroundColor: coresBase.slice(1), borderWidth: 1 }] },
-            options: { responsive: true, maintainAspectRatio: false, layout: { padding: 25 }, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } }, datalabels: pieDataLabels } }
-        });
-    }
 }
 
 function renderTableHeaders() {
@@ -697,7 +672,6 @@ jumpInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') jumpToPag
 searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
 filterSolicitante.addEventListener('change', aplicarFiltrosGerais); 
-filterPlanta.addEventListener('change', aplicarFiltrosGerais); 
 filterBloco.addEventListener('change', () => {
     const solicitantes = new Set(allData.map(row => row[3]).filter(solicitante => solicitante !== '-'));
     atualizarSolicitantesPorBloco(solicitantes);
