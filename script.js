@@ -206,6 +206,7 @@ function obterRegistrosNoPeriodo() {
 function atualizarFiltrosBlocoESolicitantePorData() {
     const registrosNoPeriodo = obterRegistrosNoPeriodo();
     const blocosDisponiveis = registrosNoPeriodo
+        .filter(row => !filterSolicitante.value || row[3] === filterSolicitante.value)
         .map(row => row[4])
         .filter(bloco => bloco !== '-');
 
@@ -408,14 +409,24 @@ function gerarRelatorioSolicitante() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(80, 80, 80);
-    doc.text('O.S. Concluídas/Aprovadas:', 180, 35);
-    doc.setTextColor(21, 87, 36);
-    doc.text(`${resolvidas}`, 223, 35);
+    doc.text('Total Filtrado:', 118, 35);
+    doc.setTextColor(13, 110, 253);
+    doc.text(`${filteredData.length}`, 140, 35);
+
+    doc.setTextColor(80, 80, 80);
+    doc.text('O.S. Concluídas/Aprovadas:', 156, 35);
+    doc.setTextColor(40, 167, 69);
+    doc.text(`${resolvidas}`, 199, 35);
 
     doc.setTextColor(80, 80, 80);
     doc.text('O.S. Pendentes/Outras:', 233, 35);
-    doc.setTextColor(138, 21, 27);
+    doc.setTextColor(220, 53, 69);
     doc.text(`${pendentes}`, 269, 35);
+
+    const pctResolvidas = (resolvidas * 100 / filteredData.length).toFixed(1);
+    doc.setFontSize(7.5);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Média de O.S. resolvidas: ${pctResolvidas}%`, 280, 39.5, { align: 'right' });
 
     // Sub-informações de filtros adicionais se ativos
     doc.setFont('helvetica', 'normal');
@@ -478,27 +489,10 @@ function gerarRelatorioSolicitante() {
         didParseCell: function(data) {
             // Estilização dos status na tabela
             if (data.section === 'body' && data.column.index === 0) {
-                const val = (data.cell.raw || '').toString().toLowerCase();
-                if (val.includes('resolvido') || val.includes('conclu') || val.includes('aprovado')) {
-                    data.cell.styles.textColor = [21, 87, 36];
-                    data.cell.styles.fillColor = [225, 245, 230];
-                    data.cell.styles.fontStyle = 'bold';
-                } else if (val.includes('pendente') || val.includes('aguardando')) {
-                    data.cell.styles.textColor = [133, 100, 4];
-                    data.cell.styles.fillColor = [255, 243, 205];
-                    data.cell.styles.fontStyle = 'bold';
-                } else if (val.includes('parado')) {
-                    data.cell.styles.textColor = [56, 61, 65];
-                    data.cell.styles.fillColor = [230, 230, 232];
-                } else if (val.includes('cancelado')) {
-                    data.cell.styles.textColor = [114, 28, 36];
-                    data.cell.styles.fillColor = [248, 215, 218];
-                    data.cell.styles.fontStyle = 'bold';
-                } else if (val.includes('execu')) {
-                    data.cell.styles.textColor = [0, 64, 133];
-                    data.cell.styles.fillColor = [204, 229, 255];
-                    data.cell.styles.fontStyle = 'bold';
-                }
+                const st = getStatusStyle(data.cell.raw);
+                data.cell.styles.textColor = st.rgbText;
+                data.cell.styles.fillColor = st.rgbBg;
+                data.cell.styles.fontStyle = 'bold';
             }
         },
         didDrawPage: function(data) {
@@ -548,6 +542,27 @@ function getTopNData(dataArray, colIndex, topN) {
     };
 }
 
+// Cores por status: pendente vermelho, resolvido verde, execução amarelo, cancelado preto/amarelo, parado cinza
+function getStatusStyle(label) {
+    const v = (label || '').toString().toLowerCase();
+    if (v.includes('resolvido') || v.includes('conclu') || v.includes('aprovado')) {
+        return { bg: '#28a745', text: '#ffffff', border: '#28a745', borderWidth: 1, rgbBg: [40, 167, 69], rgbText: [255, 255, 255] };
+    }
+    if (v.includes('cancelado')) {
+        return { bg: '#000000', text: '#ffc107', border: '#ffc107', borderWidth: 3, rgbBg: [0, 0, 0], rgbText: [255, 193, 7] };
+    }
+    if (v.includes('execu')) {
+        return { bg: '#ffc107', text: '#212529', border: '#ffc107', borderWidth: 1, rgbBg: [255, 193, 7], rgbText: [33, 37, 41] };
+    }
+    if (v.includes('parado')) {
+        return { bg: '#6c757d', text: '#ffffff', border: '#6c757d', borderWidth: 1, rgbBg: [108, 117, 125], rgbText: [255, 255, 255] };
+    }
+    if (v.includes('pendente') || v.includes('aguardando')) {
+        return { bg: '#dc3545', text: '#ffffff', border: '#dc3545', borderWidth: 1, rgbBg: [220, 53, 69], rgbText: [255, 255, 255] };
+    }
+    return { bg: '#adb5bd', text: '#212529', border: '#adb5bd', borderWidth: 1, rgbBg: [173, 181, 189], rgbText: [33, 37, 41] };
+}
+
 function atualizarDashboards() {
     const contagemStatus = {};
     let resolvidas = 0;
@@ -568,17 +583,17 @@ function atualizarDashboards() {
     });
 
     kpiCardsContainer.innerHTML = `
-        <div class="kpi-card" style="border-left-color: var(--primary-color);">
+        <div class="kpi-card" style="border-left-color: #0d6efd;">
             <h3>Total Filtrado</h3>
-            <p style="color: var(--primary-color)">${filteredData.length}</p>
+            <p style="color: #0d6efd">${filteredData.length}</p>
         </div>
         <div class="kpi-card" style="border-left-color: #155724;">
             <h3>O.S Resolvidas</h3>
             <p style="color: #155724">${resolvidas}</p>
         </div>
-        <div class="kpi-card" style="border-left-color: #004085;">
+        <div class="kpi-card" style="border-left-color: #dc3545;">
             <h3>O.S Pendentes / Outros</h3>
-            <p style="color: #004085">${pendentes}</p>
+            <p style="color: #dc3545">${pendentes}</p>
         </div>
     `;
 
@@ -603,42 +618,79 @@ function atualizarDashboards() {
     const statusData = Object.values(contagemStatus);
     const ctxStatus = document.getElementById('osmcChart').getContext('2d');
     
-    if (osmcChartInstance) {
-        osmcChartInstance.data.labels = statusLabels;
-        osmcChartInstance.data.datasets[0].data = statusData;
-        osmcChartInstance.update();
-    } else {
-        osmcChartInstance = new Chart(ctxStatus, {
-            type: 'doughnut',
-            data: { labels: statusLabels, datasets: [{ data: statusData, backgroundColor: coresBase, borderWidth: 1 }] },
-            options: { responsive: true, maintainAspectRatio: false, layout: { padding: 25 }, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } }, datalabels: pieDataLabels } }
-        });
-    }
+    const nomeSolicitante = filterSolicitante.value;
+    document.getElementById('statusChartTitle').textContent =
+        'Distribuição por Status' + (nomeSolicitante ? ` - ${nomeSolicitante}` : '');
+
+    if (osmcChartInstance) osmcChartInstance.destroy();
+    osmcChartInstance = new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: statusLabels,
+            datasets: [{
+                data: statusData,
+                backgroundColor: statusLabels.map(l => getStatusStyle(l).bg),
+                borderColor: statusLabels.map(l => getStatusStyle(l).border),
+                borderWidth: statusLabels.map(l => getStatusStyle(l).borderWidth)
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, layout: { padding: 25 }, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } }, datalabels: pieDataLabels } }
+    });
 
     // GRÁFICO 2: Top 5 Blocos (Agora no índice 4)
-    const blocoStats = getTopNData(filteredData, 4, 5);
     const ctxBloco = document.getElementById('blocoChart').getContext('2d');
-    
-    if (blocoChartInstance) {
-        blocoChartInstance.data.labels = blocoStats.labels;
-        blocoChartInstance.data.datasets[0].data = blocoStats.data;
-        blocoChartInstance.update();
-    } else {
-        blocoChartInstance = new Chart(ctxBloco, {
-            type: 'bar',
-            data: { labels: blocoStats.labels, datasets: [{ label: 'Qtd de OSMC', data: blocoStats.data, backgroundColor: '#004085' }] },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                layout: { padding: { top: 25 } }, 
-                plugins: { 
-                    legend: { display: false }, 
-                    datalabels: { color: '#444', anchor: 'end', align: 'end', offset: 4, font: { weight: 'bold', size: 11 } } 
-                }, 
-                scales: { y: { beginAtZero: true } } 
-            }
+    const blocoTitle = document.getElementById('blocoChartTitle');
+    const porSolicitante = Boolean(filterSolicitante.value);
+    let blocoLabels, blocoData, blocoOptions;
+
+    if (porSolicitante) {
+        // Percentual de O.S. resolvidas por bloco do solicitante
+        const porBloco = {};
+        filteredData.forEach(row => {
+            const bloco = row[4] ? row[4].toString().trim() : '';
+            if (!bloco || bloco === '-') return;
+            const st = (row[0] || '').toString().toLowerCase();
+            const ok = st.includes('aprovado') || st.includes('concluído') || st.includes('concluido') || st.includes('resolvido');
+            porBloco[bloco] = porBloco[bloco] || { total: 0, ok: 0 };
+            porBloco[bloco].total++;
+            if (ok) porBloco[bloco].ok++;
         });
+        const lista = Object.keys(porBloco)
+            .map(b => ({ b, total: porBloco[b].total, pct: porBloco[b].ok * 100 / porBloco[b].total }))
+            .sort((a, c) => c.total - a.total)
+            .slice(0, 5);
+        blocoLabels = lista.map(i => i.b);
+        blocoData = lista.map(i => Number(i.pct.toFixed(1)));
+        blocoTitle.textContent = (lista.length > 1
+            ? '% de O.S. Resolvidas por Bloco'
+            : 'Média de O.S. Resolvidas (%)') + ` - ${nomeSolicitante}`;
+        blocoOptions = {
+            plugins: { datalabels: { formatter: v => v + '%' } },
+            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+        };
+    } else {
+        const blocoStats = getTopNData(filteredData, 4, 5);
+        blocoLabels = blocoStats.labels;
+        blocoData = blocoStats.data;
+        blocoTitle.textContent = 'Top 5 Blocos (Volume de OSMC)';
+        blocoOptions = { plugins: {}, scales: { y: { beginAtZero: true } } };
     }
+
+    if (blocoChartInstance) blocoChartInstance.destroy();
+    blocoChartInstance = new Chart(ctxBloco, {
+        type: 'bar',
+        data: { labels: blocoLabels, datasets: [{ label: porSolicitante ? '% Resolvidas' : 'Qtd de OSMC', data: blocoData, backgroundColor: porSolicitante ? '#155724' : '#004085' }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 25 } },
+            plugins: {
+                legend: { display: false },
+                datalabels: Object.assign({ color: '#444', anchor: 'end', align: 'end', offset: 4, font: { weight: 'bold', size: 11 } }, blocoOptions.plugins.datalabels)
+            },
+            scales: blocoOptions.scales
+        }
+    });
 
 }
 
@@ -669,19 +721,13 @@ function renderTableBody() {
                 let cleanVal = val.replace(/⚠️|✅|⏸️|❌|⚙️|🛑/g, '').trim();
                 let valMin = cleanVal.toLowerCase();
 
-                if (valMin.includes('resolvido') || valMin.includes('concluído') || valMin.includes('concluido') || valMin.includes('aprovado')) {
-                    td.innerHTML = `<span style="background-color: #d4edda; color: #155724; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">✅ ${cleanVal}</span>`;
-                } else if (valMin.includes('pendente') || valMin.includes('aguardando')) {
-                    td.innerHTML = `<span style="background-color: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">⚠️ ${cleanVal}</span>`;
-                } else if (valMin.includes('parado')) {
-                    td.innerHTML = `<span style="background-color: #e2e3e5; color: #383d41; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">⏸️ ${cleanVal}</span>`;
-                } else if (valMin.includes('cancelado')) {
-                    td.innerHTML = `<span style="background-color: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">❌ ${cleanVal}</span>`;
-                } else if (valMin.includes('execução') || valMin.includes('execucao')) {
-                    td.innerHTML = `<span style="background-color: #cce5ff; color: #004085; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">⚙️ ${cleanVal}</span>`;
-                } else {
-                    td.innerHTML = `<span style="background-color: #f8f9fa; color: #212529; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">📋 ${cleanVal}</span>`;
-                }
+                const emoji = valMin.includes('resolvido') || valMin.includes('concluído') || valMin.includes('concluido') || valMin.includes('aprovado') ? '✅'
+                    : valMin.includes('pendente') || valMin.includes('aguardando') ? '⚠️'
+                    : valMin.includes('parado') ? '⏸️'
+                    : valMin.includes('cancelado') ? '❌'
+                    : valMin.includes('execução') || valMin.includes('execucao') ? '⚙️' : '📋';
+                const st = getStatusStyle(cleanVal);
+                td.innerHTML = `<span style="background-color: ${st.bg}; color: ${st.text}; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">${emoji} ${cleanVal}</span>`;
             } else {
                 td.textContent = val;
             }
@@ -729,7 +775,10 @@ jumpInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') jumpToPag
 
 searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
-filterSolicitante.addEventListener('change', aplicarFiltrosGerais); 
+filterSolicitante.addEventListener('change', () => {
+    atualizarFiltrosBlocoESolicitantePorData();
+    aplicarFiltrosGerais();
+});
 filterBloco.addEventListener('change', () => {
     atualizarFiltrosBlocoESolicitantePorData();
     aplicarFiltrosGerais();
