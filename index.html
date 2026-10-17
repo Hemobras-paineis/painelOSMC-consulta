@@ -36,6 +36,16 @@
                 <select id="filterMotivo" class="filter-select">
                     <option value="">Todos os Motivos</option>
                 </select>
+                <div class="date-range" aria-label="Filtrar por intervalo de data de emissão">
+                    <label class="date-filter" for="filterDateFrom">
+                        <span>De</span>
+                        <input type="text" id="filterDateFrom" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" aria-label="Filtrar a partir da data de emissão">
+                    </label>
+                    <label class="date-filter" for="filterDateUntil">
+                        <span>Até</span>
+                        <input type="text" id="filterDateUntil" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" aria-label="Filtrar até a data de emissão">
+                    </label>
+                </div>
 
                 <button id="btnGenerateReport" class="btn-report" type="button" disabled title="Selecione um solicitante para gerar o relatório em PDF">Gerar Relatório em PDF</button>
                 <button id="btnRefresh" class="btn-refresh">Atualizar Dados</button>

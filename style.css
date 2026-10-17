@@ -99,6 +99,37 @@ body {
     cursor: pointer;
 }
 
+.date-range {
+    display: flex;
+    gap: 8px;
+}
+
+.date-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-color);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.date-filter input {
+    width: 145px;
+    padding: 9px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--white);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-size: 13px;
+}
+
+.date-filter input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.15);
+    outline: none;
+}
+
 #searchInput {
     width: 220px; /* Barra de pesquisa com tamanho fixo */
 }
@@ -456,9 +487,20 @@ tbody tr:hover {
         gap: 10px;
     }
 
-    .filter-select, #searchInput, .btn-refresh, .btn-report {
+    .filter-select, #searchInput, .date-range, .btn-refresh, .btn-report {
         width: 100%;
         max-width: 100%;
+    }
+
+    .date-filter {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .date-filter input {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
     }
 
     /* Faixa de Resumo: KPIs e Gráfico empilhados */

@@ -24,6 +24,8 @@ const filterStatus = document.getElementById('filterStatus');
 const filterSolicitante = document.getElementById('filterSolicitante');
 const filterBloco = document.getElementById('filterBloco');
 const filterMotivo = document.getElementById('filterMotivo');
+const filterDateFrom = document.getElementById('filterDateFrom');
+const filterDateUntil = document.getElementById('filterDateUntil');
 const btnGenerateReport = document.getElementById('btnGenerateReport');
 const btnRefresh = document.getElementById('btnRefresh');
 
@@ -207,12 +209,57 @@ function atualizarSolicitantesPorBloco(solicitantesDisponiveis) {
     }
 }
 
+function obterDataEmissao(row) {
+    const data = row[1] ? row[1].toString().trim() : '';
+    const isoMatch = data.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    const brMatch = data.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const match = isoMatch || brMatch;
+
+    if (!match) return '';
+
+    const ano = Number(isoMatch ? match[1] : match[3]);
+    const mes = Number(match[2]);
+    const dia = Number(isoMatch ? match[3] : match[1]);
+    const dataValidada = new Date(Date.UTC(ano, mes - 1, dia));
+
+    if (dataValidada.getUTCFullYear() !== ano ||
+        dataValidada.getUTCMonth() !== mes - 1 ||
+        dataValidada.getUTCDate() !== dia) {
+        return '';
+    }
+
+    return `${ano.toString().padStart(4, '0')}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+}
+
+function converterDataFiltroParaIso(data) {
+    const match = data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return '';
+
+    const dia = Number(match[1]);
+    const mes = Number(match[2]);
+    const ano = Number(match[3]);
+    const dataValidada = new Date(Date.UTC(ano, mes - 1, dia));
+
+    if (dataValidada.getUTCFullYear() !== ano ||
+        dataValidada.getUTCMonth() !== mes - 1 ||
+        dataValidada.getUTCDate() !== dia) {
+        return '';
+    }
+
+    return `${ano.toString().padStart(4, '0')}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+}
+
 function aplicarFiltrosGerais() {
     const searchTerm = searchInput.value.toLowerCase();
     const statusFiltro = filterStatus.value;
     const solicitanteFiltro = filterSolicitante.value; 
     const blocoFiltro = filterBloco.value;
     const motivoFiltro = filterMotivo.value;
+    const dataDeDigitada = filterDateFrom.value.trim();
+    const dataAteDigitada = filterDateUntil.value.trim();
+    const dataDeFiltro = converterDataFiltroParaIso(dataDeDigitada);
+    const dataAteFiltro = converterDataFiltroParaIso(dataAteDigitada);
+    const datasValidas = (!dataDeDigitada || dataDeFiltro) && (!dataAteDigitada || dataAteFiltro);
 
     filteredData = allData.filter(row => {
         // Pesquisa: OSMC (2), Bloco (4), Equipamento (6)
@@ -227,7 +274,10 @@ function aplicarFiltrosGerais() {
         const passouSolicitante = !solicitanteFiltro || row[3] === solicitanteFiltro; 
         const passouBloco = !blocoFiltro || row[4] === blocoFiltro;
         const passouMotivo = !motivoFiltro || row[10] === motivoFiltro;
-        return passouPesquisa && passouStatus && passouSolicitante && passouBloco && passouMotivo;
+        const dataEmissao = dataDeFiltro || dataAteFiltro ? obterDataEmissao(row) : '';
+        const passouDataDe = !dataDeDigitada || (dataEmissao && dataEmissao >= dataDeFiltro);
+        const passouDataAte = !dataAteDigitada || (dataEmissao && dataEmissao <= dataAteFiltro);
+        return datasValidas && passouPesquisa && passouStatus && passouSolicitante && passouBloco && passouMotivo && passouDataDe && passouDataAte;
     });
 
     currentPage = 1;
@@ -678,5 +728,7 @@ filterBloco.addEventListener('change', () => {
     aplicarFiltrosGerais();
 });
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
+filterDateFrom.addEventListener('change', aplicarFiltrosGerais);
+filterDateUntil.addEventListener('change', aplicarFiltrosGerais);
 
 document.addEventListener('DOMContentLoaded', init);
