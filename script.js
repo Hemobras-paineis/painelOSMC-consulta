@@ -153,8 +153,6 @@ function fetchData(isSilentUpdate = false) {
 
 function popularFiltrosDinamicos() {
     const statusSet = new Set();
-    const solicitanteSet = new Set(); 
-    const blocoSet = new Set();
     const motivoSet = new Set();
 
     allData.forEach(row => {
@@ -162,51 +160,61 @@ function popularFiltrosDinamicos() {
         let cleanStatus = row[0] !== "-" ? row[0].replace(/⚠️|✅|⏸️|❌|⚙️|🛑/g, '').trim() : "-";
         
         if (cleanStatus !== "-") statusSet.add(cleanStatus); 
-        if (row[3] !== "-") solicitanteSet.add(row[3]); // Solicitante agora é 3
-        if (row[4] !== "-") blocoSet.add(row[4]); // Bloco agora é 4
         if (row[10] !== "-") motivoSet.add(row[10]); // Motivo agora é 10
     });
 
-    function preencherSelect(selectElement, valoresSet) {
-        const valorAtual = selectElement.value;
-        const textoPadrao = selectElement.options[0].text;
-        selectElement.innerHTML = `<option value="">${textoPadrao}</option>`;
-        
-        Array.from(valoresSet).sort().forEach(valor => {
-            const option = document.createElement('option');
-            option.value = valor;
-            option.textContent = valor;
-            if (valor === valorAtual) option.selected = true; 
-            selectElement.appendChild(option);
-        });
-    }
-
     preencherSelect(filterStatus, statusSet);
-    preencherSelect(filterBloco, blocoSet);
     preencherSelect(filterMotivo, motivoSet);
-    atualizarSolicitantesPorBloco(solicitanteSet);
+    atualizarFiltrosBlocoESolicitantePorData();
 }
 
-function atualizarSolicitantesPorBloco(solicitantesDisponiveis) {
-    const solicitanteAtual = filterSolicitante.value;
-    const solicitantesDoBloco = filterBloco.value
-        ? allData
-            .filter(row => row[4] === filterBloco.value && row[3] !== '-')
-            .map(row => row[3])
-        : Array.from(solicitantesDisponiveis);
-    const solicitantesUnicos = Array.from(new Set(solicitantesDoBloco)).sort();
+function preencherSelect(selectElement, valores) {
+    const valorAtual = selectElement.value;
+    const textoPadrao = selectElement.options[0].text;
+    const valoresUnicos = Array.from(new Set(valores)).sort();
+    selectElement.innerHTML = `<option value="">${textoPadrao}</option>`;
 
-    filterSolicitante.innerHTML = '<option value="">Todos os Solicitantes</option>';
-    solicitantesUnicos.forEach(solicitante => {
+    valoresUnicos.forEach(valor => {
         const option = document.createElement('option');
-        option.value = solicitante;
-        option.textContent = solicitante;
-        filterSolicitante.appendChild(option);
+        option.value = valor;
+        option.textContent = valor;
+        selectElement.appendChild(option);
     });
 
-    if (solicitantesUnicos.includes(solicitanteAtual)) {
-        filterSolicitante.value = solicitanteAtual;
+    if (valoresUnicos.includes(valorAtual)) {
+        selectElement.value = valorAtual;
     }
+}
+
+function obterRegistrosNoPeriodo() {
+    const dataDeDigitada = filterDateFrom.value.trim();
+    const dataAteDigitada = filterDateUntil.value.trim();
+    const dataDeFiltro = converterDataFiltroParaIso(dataDeDigitada);
+    const dataAteFiltro = converterDataFiltroParaIso(dataAteDigitada);
+    const datasValidas = (!dataDeDigitada || dataDeFiltro) && (!dataAteDigitada || dataAteFiltro);
+
+    if (!datasValidas) return allData;
+
+    return allData.filter(row => {
+        const dataEmissao = dataDeFiltro || dataAteFiltro ? obterDataEmissao(row) : '';
+        const passouDataDe = !dataDeDigitada || (dataEmissao && dataEmissao >= dataDeFiltro);
+        const passouDataAte = !dataAteDigitada || (dataEmissao && dataEmissao <= dataAteFiltro);
+        return passouDataDe && passouDataAte;
+    });
+}
+
+function atualizarFiltrosBlocoESolicitantePorData() {
+    const registrosNoPeriodo = obterRegistrosNoPeriodo();
+    const blocosDisponiveis = registrosNoPeriodo
+        .map(row => row[4])
+        .filter(bloco => bloco !== '-');
+
+    preencherSelect(filterBloco, blocosDisponiveis);
+
+    const solicitantesDisponiveis = registrosNoPeriodo
+        .filter(row => (!filterBloco.value || row[4] === filterBloco.value) && row[3] !== '-')
+        .map(row => row[3]);
+    preencherSelect(filterSolicitante, solicitantesDisponiveis);
 }
 
 function obterDataEmissao(row) {
@@ -723,12 +731,17 @@ searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
 filterSolicitante.addEventListener('change', aplicarFiltrosGerais); 
 filterBloco.addEventListener('change', () => {
-    const solicitantes = new Set(allData.map(row => row[3]).filter(solicitante => solicitante !== '-'));
-    atualizarSolicitantesPorBloco(solicitantes);
+    atualizarFiltrosBlocoESolicitantePorData();
     aplicarFiltrosGerais();
 });
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
-filterDateFrom.addEventListener('change', aplicarFiltrosGerais);
-filterDateUntil.addEventListener('change', aplicarFiltrosGerais);
+filterDateFrom.addEventListener('input', () => {
+    atualizarFiltrosBlocoESolicitantePorData();
+    aplicarFiltrosGerais();
+});
+filterDateUntil.addEventListener('input', () => {
+    atualizarFiltrosBlocoESolicitantePorData();
+    aplicarFiltrosGerais();
+});
 
 document.addEventListener('DOMContentLoaded', init);
