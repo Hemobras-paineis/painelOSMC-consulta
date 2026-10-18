@@ -358,28 +358,7 @@ function gerarRelatorioSolicitante() {
         }
     });
 
-    // 1. Faixa Superior Decorativa (Bordô Hemobrás: #8A151B)
-    doc.setFillColor(138, 21, 27);
-    doc.rect(0, 0, 297, 5, 'F');
-
-    // 2. Logotipo da Hemobrás
-    try {
-        doc.addImage(LOGO_HEMOBRAS_BASE64, 'JPEG', 14, 8, 18, 18);
-    } catch (e) {
-        console.warn('Não foi possível renderizar a logo no PDF:', e);
-    }
-
-    // 3. Cabeçalho Textual
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(138, 21, 27);
-    doc.text('HEMOBRÁS - CONSULTA OSMC', 36, 15);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(90, 90, 90);
-    doc.text('Empresa Brasileira de Hemoderivados e Biotecnologia  |  Relatório de Manutenção Corretiva', 36, 20.5);
-
+    // Informações de emissão exibidas no cabeçalho da primeira página.
     doc.setFontSize(7.5);
     doc.setTextColor(110, 110, 110);
     const dataHoraEmissao = new Date().toLocaleString('pt-BR');
@@ -499,6 +478,26 @@ function gerarRelatorioSolicitante() {
             const pageSize = doc.internal.pageSize;
             const pageHeight = pageSize.height || pageSize.getHeight();
             const pageWidth = pageSize.width || pageSize.getWidth();
+
+            // Identificação institucional repetida em todas as páginas do relatório.
+            doc.setFillColor(138, 21, 27);
+            doc.rect(0, 0, pageWidth, 5, 'F');
+
+            try {
+                doc.addImage(LOGO_HEMOBRAS_BASE64, 'JPEG', 14, 8, 18, 18);
+            } catch (e) {
+                console.warn('Não foi possível renderizar a logo no PDF:', e);
+            }
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.setTextColor(138, 21, 27);
+            doc.text('HEMOBRÁS - CONSULTA OSMC', 36, 15);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(90, 90, 90);
+            doc.text('Empresa Brasileira de Hemoderivados e Biotecnologia  |  Relatório de Manutenção Corretiva', 36, 20.5);
 
             // Linha divisória do rodapé
             doc.setDrawColor(210, 210, 210);
