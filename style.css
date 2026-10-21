@@ -99,6 +99,117 @@ body {
     cursor: pointer;
 }
 
+.multi-select-filter {
+    position: relative;
+    width: 160px;
+}
+
+.multi-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    height: 38px;
+    padding: 9px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.multi-select-trigger > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.multi-select-trigger:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+}
+
+.multi-select-caret {
+    flex: 0 0 auto;
+    width: 0;
+    height: 0;
+    border-top: 5px solid #666;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
+}
+
+.multi-select-menu {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    z-index: 30;
+    width: max(100%, 190px);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--white);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.multi-select-menu[hidden] {
+    display: none;
+}
+
+.multi-select-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.multi-select-actions button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--primary-color);
+    font-family: var(--font-main);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.multi-select-options {
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.multi-select-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 25px;
+    padding: 4px 10px;
+    color: var(--text-color);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.multi-select-option:hover {
+    background: var(--hover-bg);
+}
+
+.multi-select-option input {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.multi-select-filter select[multiple] {
+    display: none;
+}
+
+.multi-select-filter.is-open {
+    z-index: 31;
+}
+
 .date-range {
     display: flex;
     gap: 8px;
@@ -487,7 +598,7 @@ tbody tr:hover {
         gap: 10px;
     }
 
-    .filter-select, #searchInput, .date-range, .btn-refresh, .btn-report {
+    .filter-select, .multi-select-filter, #searchInput, .date-range, .btn-refresh, .btn-report {
         width: 100%;
         max-width: 100%;
     }

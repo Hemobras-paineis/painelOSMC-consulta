@@ -169,22 +169,116 @@ function popularFiltrosDinamicos() {
 }
 
 function preencherSelect(selectElement, valores) {
-    const valorAtual = selectElement.value;
-    const textoPadrao = selectElement.options[0].text;
+    const valoresAtuais = obterValoresSelecionados(selectElement);
     const valoresUnicos = Array.from(new Set(valores)).sort();
-    selectElement.innerHTML = `<option value="">${textoPadrao}</option>`;
+    selectElement.innerHTML = selectElement.multiple ? '' : `<option value="">${selectElement.options[0].text}</option>`;
 
     valoresUnicos.forEach(valor => {
         const option = document.createElement('option');
         option.value = valor;
         option.textContent = valor;
+        option.selected = valoresAtuais.includes(valor);
         selectElement.appendChild(option);
     });
 
-    if (valoresUnicos.includes(valorAtual)) {
-        selectElement.value = valorAtual;
+    if (!selectElement.multiple && valoresUnicos.includes(valoresAtuais[0])) {
+        selectElement.value = valoresAtuais[0];
     }
+
+    if (selectElement.multiple) renderFiltroMultiplo(selectElement);
 }
+
+function obterValoresSelecionados(selectElement) {
+    return Array.from(selectElement.selectedOptions)
+        .map(option => option.value)
+        .filter(Boolean);
+}
+
+function renderFiltroMultiplo(selectElement) {
+    const wrapperId = selectElement.id === 'filterSolicitante' ? 'solicitanteFilterDropdown' : 'blocoFilterDropdown';
+    const wrapper = document.getElementById(wrapperId);
+    const trigger = wrapper.querySelector('.multi-select-trigger');
+    const optionsContainer = wrapper.querySelector('.multi-select-options');
+    const selectedValues = obterValoresSelecionados(selectElement);
+    const placeholder = selectElement.id === 'filterSolicitante' ? 'Todos os Solicitantes' : 'Todos os Blocos';
+    const triggerLabel = selectedValues.length === 0
+        ? placeholder
+        : selectedValues.length === 1
+            ? selectedValues[0]
+            : `${selectedValues.length} selecionados`;
+
+    trigger.querySelector('span').textContent = triggerLabel;
+    trigger.title = selectedValues.join(', ') || placeholder;
+    optionsContainer.replaceChildren();
+
+    Array.from(selectElement.options).forEach(option => {
+        const label = document.createElement('label');
+        label.className = 'multi-select-option';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = option.value;
+        checkbox.checked = option.selected;
+        checkbox.addEventListener('change', () => {
+            option.selected = checkbox.checked;
+            selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        label.append(checkbox, document.createTextNode(option.textContent));
+        optionsContainer.appendChild(label);
+    });
+}
+
+function configurarFiltroMultiplo(selectElement) {
+    const wrapperId = selectElement.id === 'filterSolicitante' ? 'solicitanteFilterDropdown' : 'blocoFilterDropdown';
+    const wrapper = document.getElementById(wrapperId);
+    const trigger = wrapper.querySelector('.multi-select-trigger');
+    const menu = wrapper.querySelector('.multi-select-menu');
+
+    trigger.addEventListener('click', () => {
+        const abrir = menu.hidden;
+        document.querySelectorAll('.multi-select-menu').forEach(otherMenu => {
+            otherMenu.hidden = true;
+            otherMenu.previousElementSibling.setAttribute('aria-expanded', 'false');
+            otherMenu.parentElement.classList.remove('is-open');
+        });
+        menu.hidden = !abrir;
+        trigger.setAttribute('aria-expanded', String(abrir));
+        wrapper.classList.toggle('is-open', abrir);
+    });
+
+    wrapper.querySelector('[data-action="select-all"]').addEventListener('click', () => {
+        Array.from(selectElement.options).forEach(option => {
+            option.selected = true;
+        });
+        selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    wrapper.querySelector('[data-action="clear"]').addEventListener('click', () => {
+        Array.from(selectElement.options).forEach(option => {
+            option.selected = false;
+        });
+        selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    selectElement.addEventListener('change', () => renderFiltroMultiplo(selectElement));
+}
+
+document.addEventListener('click', event => {
+    if (event.target.closest('.multi-select-filter')) return;
+    document.querySelectorAll('.multi-select-menu').forEach(menu => {
+        menu.hidden = true;
+        menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+        menu.parentElement.classList.remove('is-open');
+    });
+});
+
+document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.multi-select-menu').forEach(menu => {
+        menu.hidden = true;
+        menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+        menu.parentElement.classList.remove('is-open');
+    });
+});
 
 function obterRegistrosNoPeriodo() {
     const dataDeDigitada = filterDateFrom.value.trim();
@@ -206,14 +300,13 @@ function obterRegistrosNoPeriodo() {
 function atualizarFiltrosBlocoESolicitantePorData() {
     const registrosNoPeriodo = obterRegistrosNoPeriodo();
     const blocosDisponiveis = registrosNoPeriodo
-        .filter(row => !filterSolicitante.value || row[3] === filterSolicitante.value)
         .map(row => row[4])
         .filter(bloco => bloco !== '-');
 
     preencherSelect(filterBloco, blocosDisponiveis);
 
     const solicitantesDisponiveis = registrosNoPeriodo
-        .filter(row => (!filterBloco.value || row[4] === filterBloco.value) && row[3] !== '-')
+        .filter(row => row[3] !== '-')
         .map(row => row[3]);
     preencherSelect(filterSolicitante, solicitantesDisponiveis);
 }
@@ -261,8 +354,8 @@ function converterDataFiltroParaIso(data) {
 function aplicarFiltrosGerais() {
     const searchTerm = searchInput.value.toLowerCase();
     const statusFiltro = filterStatus.value;
-    const solicitanteFiltro = filterSolicitante.value; 
-    const blocoFiltro = filterBloco.value;
+    const solicitantesFiltro = obterValoresSelecionados(filterSolicitante);
+    const blocosFiltro = obterValoresSelecionados(filterBloco);
     const motivoFiltro = filterMotivo.value;
     const dataDeDigitada = filterDateFrom.value.trim();
     const dataAteDigitada = filterDateUntil.value.trim();
@@ -271,17 +364,18 @@ function aplicarFiltrosGerais() {
     const datasValidas = (!dataDeDigitada || dataDeFiltro) && (!dataAteDigitada || dataAteFiltro);
 
     filteredData = allData.filter(row => {
-        // Pesquisa: OSMC (2), Bloco (4), Equipamento (6)
+        // Pesquisa: OSMC (2), Bloco (4), Equipamento (6), Descrição do Problema (8)
         const passouPesquisa = !searchTerm || 
             (row[2] && row[2].toString().toLowerCase().includes(searchTerm)) || 
             (row[4] && row[4].toString().toLowerCase().includes(searchTerm)) ||
-            (row[6] && row[6].toString().toLowerCase().includes(searchTerm));
+            (row[6] && row[6].toString().toLowerCase().includes(searchTerm)) ||
+            (row[8] && row[8].toString().toLowerCase().includes(searchTerm));
             
         let cleanStatus = row[0] ? row[0].toString().replace(/⚠️|✅|⏸️|❌|⚙️|🛑/g, '').trim() : '';
 
         const passouStatus = !statusFiltro || cleanStatus === statusFiltro;
-        const passouSolicitante = !solicitanteFiltro || row[3] === solicitanteFiltro; 
-        const passouBloco = !blocoFiltro || row[4] === blocoFiltro;
+        const passouSolicitante = !solicitantesFiltro.length || solicitantesFiltro.includes(row[3]);
+        const passouBloco = !blocosFiltro.length || blocosFiltro.includes(row[4]);
         const passouMotivo = !motivoFiltro || row[10] === motivoFiltro;
         const dataEmissao = dataDeFiltro || dataAteFiltro ? obterDataEmissao(row) : '';
         const passouDataDe = !dataDeDigitada || (dataEmissao && dataEmissao >= dataDeFiltro);
@@ -298,27 +392,27 @@ function aplicarFiltrosGerais() {
 }
 
 function atualizarDisponibilidadeRelatorio() {
-    const solicitanteSelecionado = Boolean(filterSolicitante.value);
-    const blocoSelecionado = Boolean(filterBloco.value);
+    const solicitanteSelecionado = obterValoresSelecionados(filterSolicitante).length > 0;
+    const blocoSelecionado = obterValoresSelecionados(filterBloco).length > 0;
     const existemRegistros = filteredData.length > 0;
 
     btnGenerateReport.disabled = (!solicitanteSelecionado && !blocoSelecionado) || !existemRegistros;
     btnGenerateReport.title = solicitanteSelecionado
         ? (existemRegistros
-            ? 'Gerar relatório em PDF para o solicitante selecionado'
+            ? 'Gerar relatório em PDF para os solicitantes selecionados'
             : 'Não há registros para os filtros selecionados')
         : blocoSelecionado
             ? (existemRegistros
-                ? 'Gerar relatório em PDF para todos os solicitantes do bloco selecionado'
+                ? 'Gerar relatório em PDF para todos os solicitantes dos blocos selecionados'
                 : 'Não há registros para os filtros selecionados')
-            : 'Selecione um solicitante ou bloco para gerar o relatório em PDF';
+            : 'Selecione solicitantes ou blocos para gerar o relatório em PDF';
 }
 
 function gerarRelatorioSolicitante() {
-    const solicitante = filterSolicitante.value;
-    const bloco = filterBloco.value;
+    const solicitantes = obterValoresSelecionados(filterSolicitante);
+    const blocos = obterValoresSelecionados(filterBloco);
 
-    if (!solicitante && !bloco) {
+    if (!solicitantes.length && !blocos.length) {
         alert('Selecione um solicitante ou bloco antes de gerar o relatório.');
         filterBloco.focus();
         return;
@@ -342,8 +436,10 @@ function gerarRelatorioSolicitante() {
         return;
     }
 
-    const nomeRelatorio = (solicitante || `bloco_${bloco}`).replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '');
-    const destinatarioRelatorio = solicitante || `Todos os solicitantes do bloco ${bloco}`;
+    const nomeRelatorio = (solicitantes.length ? solicitantes.join('_') : `bloco_${blocos.join('_')}`).replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '');
+    const destinatarioRelatorio = solicitantes.length
+        ? solicitantes.join(', ')
+        : `Todos os solicitantes dos blocos ${blocos.join(', ')}`;
     const totalPagesExp = '{total_pages_count_string}';
 
     // Contadores para o resumo do solicitante
@@ -379,7 +475,7 @@ function gerarRelatorioSolicitante() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(138, 21, 27);
-    doc.text(solicitante ? 'Solicitante:' : 'Bloco:', 20, 35);
+    doc.text(solicitantes.length ? 'Solicitantes:' : 'Blocos:', 20, 35);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 30, 30);
@@ -411,7 +507,7 @@ function gerarRelatorioSolicitante() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(110, 110, 110);
-    const blocoF = filterBloco.value || 'Todos';
+    const blocoF = blocos.length ? blocos.join(', ') : 'Todos';
     const statusF = filterStatus.value || 'Todos';
     doc.text(`Filtros adicionais: Bloco (${blocoF})  |  Status (${statusF})`, 20, 39.5);
 
@@ -617,7 +713,8 @@ function atualizarDashboards() {
     const statusData = Object.values(contagemStatus);
     const ctxStatus = document.getElementById('osmcChart').getContext('2d');
     
-    const nomeSolicitante = filterSolicitante.value;
+    const solicitantesSelecionados = obterValoresSelecionados(filterSolicitante);
+    const nomeSolicitante = solicitantesSelecionados.join(', ');
     document.getElementById('statusChartTitle').textContent =
         'Distribuição por Status' + (nomeSolicitante ? ` - ${nomeSolicitante}` : '');
 
@@ -639,7 +736,7 @@ function atualizarDashboards() {
     // GRÁFICO 2: Top 5 Blocos (Agora no índice 4)
     const ctxBloco = document.getElementById('blocoChart').getContext('2d');
     const blocoTitle = document.getElementById('blocoChartTitle');
-    const porSolicitante = Boolean(filterSolicitante.value);
+    const porSolicitante = solicitantesSelecionados.length > 0;
     let blocoLabels, blocoData, blocoOptions;
 
     if (porSolicitante) {
@@ -775,11 +872,9 @@ jumpInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') jumpToPag
 searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
 filterSolicitante.addEventListener('change', () => {
-    atualizarFiltrosBlocoESolicitantePorData();
     aplicarFiltrosGerais();
 });
 filterBloco.addEventListener('change', () => {
-    atualizarFiltrosBlocoESolicitantePorData();
     aplicarFiltrosGerais();
 });
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
@@ -791,5 +886,8 @@ filterDateUntil.addEventListener('input', () => {
     atualizarFiltrosBlocoESolicitantePorData();
     aplicarFiltrosGerais();
 });
+
+configurarFiltroMultiplo(filterSolicitante);
+configurarFiltroMultiplo(filterBloco);
 
 document.addEventListener('DOMContentLoaded', init);

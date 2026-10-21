@@ -27,12 +27,32 @@
                 <select id="filterStatus" class="filter-select">
                     <option value="">Todos os Status</option>
                 </select>
-                <select id="filterSolicitante" class="filter-select">
-                    <option value="">Todos os Solicitantes</option>
-                </select>
-                <select id="filterBloco" class="filter-select">
-                    <option value="">Todos os Blocos</option>
-                </select>
+                <div class="multi-select-filter" id="solicitanteFilterDropdown">
+                    <button class="multi-select-trigger" type="button" aria-expanded="false" aria-haspopup="listbox" aria-label="Filtrar por solicitantes">
+                        <span>Todos os Solicitantes</span><span class="multi-select-caret" aria-hidden="true"></span>
+                    </button>
+                    <div class="multi-select-menu" hidden>
+                        <div class="multi-select-actions">
+                            <button type="button" data-action="select-all">Selecionar todos</button>
+                            <button type="button" data-action="clear">Limpar</button>
+                        </div>
+                        <div class="multi-select-options" role="listbox" aria-label="Solicitantes" aria-multiselectable="true"></div>
+                    </div>
+                    <select id="filterSolicitante" multiple aria-hidden="true" tabindex="-1"></select>
+                </div>
+                <div class="multi-select-filter" id="blocoFilterDropdown">
+                    <button class="multi-select-trigger" type="button" aria-expanded="false" aria-haspopup="listbox" aria-label="Filtrar por blocos">
+                        <span>Todos os Blocos</span><span class="multi-select-caret" aria-hidden="true"></span>
+                    </button>
+                    <div class="multi-select-menu" hidden>
+                        <div class="multi-select-actions">
+                            <button type="button" data-action="select-all">Selecionar todos</button>
+                            <button type="button" data-action="clear">Limpar</button>
+                        </div>
+                        <div class="multi-select-options" role="listbox" aria-label="Blocos" aria-multiselectable="true"></div>
+                    </div>
+                    <select id="filterBloco" multiple aria-hidden="true" tabindex="-1"></select>
+                </div>
                 <select id="filterMotivo" class="filter-select">
                     <option value="">Todos os Motivos</option>
                 </select>
@@ -47,9 +67,9 @@
                     </label>
                 </div>
 
-                <button id="btnGenerateReport" class="btn-report" type="button" disabled title="Selecione um solicitante para gerar o relatório em PDF">Gerar Relatório em PDF</button>
+                <button id="btnGenerateReport" class="btn-report" type="button" disabled title="Selecione solicitantes ou blocos para gerar o relatório em PDF">Gerar Relatório em PDF</button>
                 <button id="btnRefresh" class="btn-refresh">Atualizar Dados</button>
-                <input type="text" id="searchInput" placeholder="Pesquisar OS, Bloco ou Equipamento..." autocomplete="off">
+                <input type="text" id="searchInput" placeholder="Pesquisar OS, Bloco, Equipamento ou Descrição..." autocomplete="off" aria-label="Pesquisar OSMC por número, bloco, equipamento ou descrição">
             </div>
         </header>
 
