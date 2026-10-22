@@ -297,17 +297,32 @@ function obterRegistrosNoPeriodo() {
     });
 }
 
-function atualizarFiltrosBlocoESolicitantePorData() {
+function atualizarFiltrosBlocoESolicitantePorData(filtroAlterado = '') {
     const registrosNoPeriodo = obterRegistrosNoPeriodo();
-    const blocosDisponiveis = registrosNoPeriodo
+    const solicitantesSelecionados = obterValoresSelecionados(filterSolicitante);
+    const blocosSelecionados = obterValoresSelecionados(filterBloco);
+    const registrosDosSolicitantesSelecionados = registrosNoPeriodo.filter(row =>
+        !solicitantesSelecionados.length || solicitantesSelecionados.includes(row[3])
+    );
+    const registrosDosBlocosSelecionados = registrosNoPeriodo.filter(row =>
+        !blocosSelecionados.length || blocosSelecionados.includes(row[4])
+    );
+
+    const registrosParaBlocos = filtroAlterado === 'solicitante' || !filtroAlterado
+        ? registrosDosSolicitantesSelecionados
+        : registrosNoPeriodo;
+    const registrosParaSolicitantes = filtroAlterado === 'bloco' || !filtroAlterado
+        ? registrosDosBlocosSelecionados
+        : registrosNoPeriodo;
+
+    const blocosDisponiveis = registrosParaBlocos
         .map(row => row[4])
         .filter(bloco => bloco !== '-');
-
-    preencherSelect(filterBloco, blocosDisponiveis);
-
-    const solicitantesDisponiveis = registrosNoPeriodo
+    const solicitantesDisponiveis = registrosParaSolicitantes
         .filter(row => row[3] !== '-')
         .map(row => row[3]);
+
+    preencherSelect(filterBloco, blocosDisponiveis);
     preencherSelect(filterSolicitante, solicitantesDisponiveis);
 }
 
@@ -414,7 +429,7 @@ function gerarRelatorioSolicitante() {
 
     if (!solicitantes.length && !blocos.length) {
         alert('Selecione um solicitante ou bloco antes de gerar o relatório.');
-        filterBloco.focus();
+        filterSolicitante.focus();
         return;
     }
 
@@ -440,6 +455,9 @@ function gerarRelatorioSolicitante() {
     const destinatarioRelatorio = solicitantes.length
         ? solicitantes.join(', ')
         : `Todos os solicitantes dos blocos ${blocos.join(', ')}`;
+    const identificacaoRelatorio = solicitantes.length
+        ? `Solicitantes: ${destinatarioRelatorio}`
+        : `Blocos: ${blocos.join(', ')}`;
     const totalPagesExp = '{total_pages_count_string}';
 
     // Contadores para o resumo do solicitante
@@ -605,7 +623,7 @@ function gerarRelatorioSolicitante() {
             doc.setFontSize(7);
             doc.setTextColor(120, 120, 120);
             doc.text('Hemobrás - Empresa Brasileira de Hemoderivados e Biotecnologia', 14, pageHeight - 5);
-            doc.text(solicitante ? `Solicitante: ${solicitante}` : `Bloco: ${bloco}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+            doc.text(identificacaoRelatorio, pageWidth / 2, pageHeight - 5, { align: 'center' });
             doc.text(`Página ${data.pageNumber} de ${totalPagesExp}`, pageWidth - 14, pageHeight - 5, { align: 'right' });
         }
     });
@@ -872,18 +890,20 @@ jumpInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') jumpToPag
 searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
 filterSolicitante.addEventListener('change', () => {
+    atualizarFiltrosBlocoESolicitantePorData('solicitante');
     aplicarFiltrosGerais();
 });
 filterBloco.addEventListener('change', () => {
+    atualizarFiltrosBlocoESolicitantePorData('bloco');
     aplicarFiltrosGerais();
 });
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
 filterDateFrom.addEventListener('input', () => {
-    atualizarFiltrosBlocoESolicitantePorData();
+    atualizarFiltrosBlocoESolicitantePorData('data');
     aplicarFiltrosGerais();
 });
 filterDateUntil.addEventListener('input', () => {
-    atualizarFiltrosBlocoESolicitantePorData();
+    atualizarFiltrosBlocoESolicitantePorData('data');
     aplicarFiltrosGerais();
 });
 
