@@ -60,10 +60,12 @@
                     <label class="date-filter" for="filterDateFrom">
                         <span>De</span>
                         <input type="text" id="filterDateFrom" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" aria-label="Filtrar a partir da data de emissão">
+                        <span class="date-picker"><button type="button" class="date-picker-btn" aria-label="Abrir calendário">&#128197;</button><input type="date" class="date-picker-native" data-target="filterDateFrom" tabindex="-1" aria-hidden="true"></span>
                     </label>
                     <label class="date-filter" for="filterDateUntil">
                         <span>Até</span>
                         <input type="text" id="filterDateUntil" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" aria-label="Filtrar até a data de emissão">
+                        <span class="date-picker"><button type="button" class="date-picker-btn" aria-label="Abrir calendário">&#128197;</button><input type="date" class="date-picker-native" data-target="filterDateUntil" tabindex="-1" aria-hidden="true"></span>
                     </label>
                 </div>
 

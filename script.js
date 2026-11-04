@@ -907,6 +907,23 @@ filterDateUntil.addEventListener('input', () => {
     aplicarFiltrosGerais();
 });
 
+document.querySelectorAll('.date-picker').forEach(picker => {
+    const btn = picker.querySelector('.date-picker-btn');
+    const native = picker.querySelector('.date-picker-native');
+    const target = document.getElementById(native.dataset.target);
+    btn.addEventListener('click', () => {
+        const [d, m, y] = target.value.split('/');
+        native.value = y && y.length === 4 ? `${y}-${m}-${d}` : '';
+        if (native.showPicker) native.showPicker(); else native.click();
+    });
+    native.addEventListener('change', () => {
+        if (!native.value) return;
+        const [y, m, d] = native.value.split('-');
+        target.value = `${d}/${m}/${y}`;
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+});
+
 configurarFiltroMultiplo(filterSolicitante);
 configurarFiltroMultiplo(filterBloco);
 

@@ -235,6 +235,38 @@ body {
     font-size: 13px;
 }
 
+.date-filter .date-picker {
+    position: relative;
+    display: inline-flex;
+}
+
+.date-picker-btn {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--white);
+    color: var(--primary-color);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.date-picker-btn:hover {
+    border-color: var(--primary-color);
+}
+
+.date-filter input.date-picker-native {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
 .date-filter input:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.15);
